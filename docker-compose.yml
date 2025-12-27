@@ -1,0 +1,77 @@
+version: "3.8"
+
+services:
+  # OCR Service
+  ocr-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ocr-service
+    ports:
+      - "3007:3007"
+    environment:
+      - NODE_ENV=development
+      - PORT=3007
+      - DATABASE_URL=postgresql://fepa:fepa123@postgres:5432/fepa_ocr
+      - RABBITMQ_URL=amqp://fepa:fepa123@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - fepa-network
+    volumes:
+      # Mount source code for development (hot reload)
+      - .:/app
+      - /app/node_modules
+    # Uncomment for development mode
+    # command: npm run start:dev
+
+    # PostgreSQL (shared)
+  postgres:
+    image: postgres:15-alpine
+    container_name: fepa-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=fepa
+      - POSTGRES_PASSWORD=fepa123
+      - POSTGRES_DB=fepa_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fepa-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U fepa" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ (shared)
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: fepa-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=fepa
+      - RABBITMQ_DEFAULT_PASS=fepa123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - fepa-network
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  fepa-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  rabbitmq_data:

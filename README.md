@@ -1,98 +1,247 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# OCR Service - Docker Compose
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Docker Compose setup để chạy OCR Service độc lập với PostgreSQL và RabbitMQ.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🚀 Quick Start
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
+### 1. Tạo .env file
 ```bash
-$ npm install
+cp .env.example .env
 ```
 
-## Compile and run the project
-
+### 2. Start services
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+docker-compose up -d
 ```
 
-## Run tests
-
+### 3. Run Prisma migration
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# Wait for PostgreSQL to be ready
+docker-compose exec ocr-service npx prisma generate
+docker-compose exec ocr-service npx prisma db push
 ```
 
-## Deployment
+### 4. Verify
+- **OCR Service**: http://localhost:3007
+- **RabbitMQ UI**: http://localhost:15672 (fepa/fepa123)
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+---
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## 📋 Services
 
+| Service | Port | Description |
+|---------|------|-------------|
+| ocr-service | 3007 | OCR microservice |
+| postgres | 5432 | PostgreSQL database |
+| rabbitmq | 5672, 15672 | RabbitMQ message broker |
+
+---
+
+## 🔧 Development Mode
+
+### Enable Hot Reload
+
+1. Uncomment `command: npm run start:dev` in `docker-compose.yml`
+2. Restart: `docker-compose restart ocr-service`
+
+### View Logs
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# All services
+docker-compose logs -f
+
+# OCR service only
+docker-compose logs -f ocr-service
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
-## Resources
+## 🧪 Testing
 
-Check out a few resources that may come in handy when working with NestJS:
+### With API Gateway
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+1. Start API Gateway separately:
+   ```bash
+   cd ../api-gateway
+   docker-compose up -d
+   ```
 
-## Support
+2. Test via API Gateway:
+   ```bash
+   # Get JWT token first
+   POST http://localhost:3000/api/v1/auth/login
+   
+   # Create OCR job
+   POST http://localhost:3000/api/v1/ocr/scan
+   Authorization: Bearer YOUR_TOKEN
+   {
+     "fileUrl": "https://example.com/receipt.jpg"
+   }
+   ```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### Direct Testing (without API Gateway)
 
-## Stay in touch
+OCR service listens on RabbitMQ `ocr_queue`. You can send messages directly:
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```javascript
+// Using amqplib
+const message = {
+  pattern: 'ocr.scan',
+  data: {
+    fileUrl: 'https://example.com/receipt.jpg',
+    userId: 'user-uuid'
+  }
+};
+```
 
-## License
+---
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## 🗄️ Database
+
+### Access PostgreSQL
+```bash
+# Via Docker
+docker-compose exec postgres psql -U fepa -d fepa_ocr
+
+# List tables
+\dt
+
+# View OcrJob table
+SELECT * FROM "OcrJob";
+```
+
+### Prisma Studio
+```bash
+docker-compose exec ocr-service npx prisma studio
+```
+
+---
+
+## 🛠️ Commands
+
+### Start
+```bash
+docker-compose up -d
+```
+
+### Stop
+```bash
+docker-compose down
+```
+
+### Rebuild
+```bash
+docker-compose up -d --build
+```
+
+### Clean (remove volumes)
+```bash
+docker-compose down -v
+```
+
+### View Logs
+```bash
+docker-compose logs -f ocr-service
+```
+
+### Exec into container
+```bash
+docker-compose exec ocr-service sh
+```
+
+---
+
+## 🔍 Troubleshooting
+
+### Database Connection Error
+
+**Problem**: `P1000: Authentication failed`
+
+**Solution**:
+1. Ensure PostgreSQL is running: `docker-compose ps postgres`
+2. Check DATABASE_URL in `.env`
+3. Recreate database:
+   ```bash
+   docker-compose down -v
+   docker-compose up -d postgres
+   # Wait 10 seconds
+   docker-compose up -d ocr-service
+   ```
+
+### RabbitMQ Connection Error
+
+**Problem**: Cannot connect to RabbitMQ
+
+**Solution**:
+1. Check RabbitMQ is healthy: `docker-compose ps rabbitmq`
+2. View logs: `docker-compose logs rabbitmq`
+3. Restart: `docker-compose restart rabbitmq`
+
+### Prisma Migration Error
+
+**Problem**: Tables not created
+
+**Solution**:
+```bash
+docker-compose exec ocr-service npx prisma db push --force-reset
+```
+
+---
+
+## 🌐 Network
+
+Services communicate via `fepa-network`. To connect with other services:
+
+```yaml
+# In other service's docker-compose.yml
+networks:
+  fepa-network:
+    external: true
+```
+
+Then start this service first to create the network.
+
+---
+
+## 📦 Volumes
+
+- `postgres_data`: PostgreSQL data persistence
+- `rabbitmq_data`: RabbitMQ data persistence
+
+### Backup
+```bash
+docker run --rm -v ocr-service_postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres-backup.tar.gz -C /data .
+```
+
+### Restore
+```bash
+docker run --rm -v ocr-service_postgres_data:/data -v $(pwd):/backup alpine tar xzf /backup/postgres-backup.tar.gz -C /data
+```
+
+---
+
+## 🔐 Security
+
+**⚠️ For Production**:
+
+1. Change credentials in `docker-compose.yml`:
+   ```yaml
+   environment:
+     - POSTGRES_PASSWORD=your_secure_password
+     - RABBITMQ_DEFAULT_PASS=your_secure_password
+   ```
+
+2. Update `.env`:
+   ```env
+   DATABASE_URL="postgresql://fepa:your_secure_password@postgres:5432/fepa_ocr"
+   RABBITMQ_URL=amqp://fepa:your_secure_password@rabbitmq:5672
+   ```
+
+3. Don't expose ports publicly (remove port mappings or use firewall)
+
+---
+
+## 📚 Related Documentation
+
+- [OCR Service Implementation](../OCR_SERVICE_IMPLEMENTATION.md)
+- [Database Architecture](../DATABASE_ARCHITECTURE.md)
+- [RabbitMQ Migration](../RABBITMQ_MIGRATION.md)

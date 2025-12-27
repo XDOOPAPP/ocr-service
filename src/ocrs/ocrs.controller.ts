@@ -1,35 +1,28 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { OcrsService } from './ocrs.service';
-import { CreateOcrDto } from './dto/create-ocr.dto';
-import { UpdateOcrDto } from './dto/update-ocr.dto';
+import { ScanOcrDto } from './dto/scan-ocr.dto';
+import { QueryOcrDto } from './dto/query-ocr.dto';
 
 @Controller()
 export class OcrsController {
-  constructor(private readonly ocrsService: OcrsService) {}
+  constructor(private readonly ocrsService: OcrsService) { }
 
-  @MessagePattern('createOcr')
-  create(@Payload() createOcrDto: CreateOcrDto) {
-    return this.ocrsService.create(createOcrDto);
+  @MessagePattern('ocr.scan')
+  async scan(@Payload() payload: ScanOcrDto & { userId: string }) {
+    const { userId, ...dto } = payload;
+    return this.ocrsService.scan(dto, userId);
   }
 
-  @MessagePattern('findAllOcrs')
-  findAll() {
-    return this.ocrsService.findAll();
+  @MessagePattern('ocr.history')
+  async getHistory(@Payload() payload: QueryOcrDto & { userId: string }) {
+    const { userId, ...query } = payload;
+    return this.ocrsService.findHistory(query, userId);
   }
 
-  @MessagePattern('findOneOcr')
-  findOne(@Payload() id: number) {
-    return this.ocrsService.findOne(id);
-  }
-
-  @MessagePattern('updateOcr')
-  update(@Payload() updateOcrDto: UpdateOcrDto) {
-    return this.ocrsService.update(updateOcrDto.id, updateOcrDto);
-  }
-
-  @MessagePattern('removeOcr')
-  remove(@Payload() id: number) {
-    return this.ocrsService.remove(id);
+  @MessagePattern('ocr.find_one')
+  async findOne(@Payload() payload: { jobId: string; userId: string }) {
+    const { jobId, userId } = payload;
+    return this.ocrsService.findOne(jobId, userId);
   }
 }
