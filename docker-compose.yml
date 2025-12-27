@@ -70,7 +70,8 @@ services:
 
 networks:
   fepa-network:
-    driver: bridge
+    name: api-gateway_fepa-network
+    external: true
 
 volumes:
   postgres_data:
