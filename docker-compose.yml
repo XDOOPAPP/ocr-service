@@ -1,7 +1,6 @@
 version: "3.8"
 
 services:
-  # OCR Service
   ocr-service:
     build:
       context: .
