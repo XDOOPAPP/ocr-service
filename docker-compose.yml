@@ -23,7 +23,3 @@ networks:
   fepa-network:
     name: api-gateway_fepa-network
     external: true
-
-volumes:
-  postgres_data:
-  rabbitmq_data:
