@@ -2,7 +2,7 @@
 import { NestFactory } from '@nestjs/core';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { RpcExceptionFilter } from './common/filters/rpc-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
@@ -22,7 +22,7 @@ async function bootstrap() {
 
   // Global exception filter
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(new RpcExceptionFilter());
 
   // Global interceptor for response transformation
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument

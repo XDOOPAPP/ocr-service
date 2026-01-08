@@ -12,8 +12,10 @@ services:
       - NODE_ENV=development
       - PORT=3007
       - DATABASE_URL=postgresql://fepa:fepa123@fepa-postgres:5432/fepa_ocr
-      - RABBITMQ_URL=amqp://fepa:fepa123@fepa-rabbitmq:5672      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}    restart: on-failure
+      - RABBITMQ_URL=amqp://fepa:fepa123@fepa-rabbitmq:5672
+      - JWT_SECRET=${JWT_SECRET:-fepa-key}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+    restart: on-failure
     networks:
       - fepa-network
     volumes:

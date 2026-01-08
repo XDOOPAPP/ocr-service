@@ -9,7 +9,7 @@ datasource db {
 
 model OcrJob {
   id           String    @id @default(uuid()) @db.Uuid
-  userId       String    @db.Uuid
+  userId       String // Changed from @db.Uuid to String to support MongoDB ObjectIds
   status       String    @default("queued") // queued | processing | completed | failed
   fileUrl      String
   resultJson   Json?
