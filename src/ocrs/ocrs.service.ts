@@ -26,6 +26,8 @@ export class OcrsService {
     scanOcrDto: ScanOcrDto,
     userId: string,
   ): Promise<Record<string, unknown>> {
+    this.logger.log(`[SCAN] Creating job for user ${userId}, fileUrl: ${scanOcrDto.fileUrl}`);
+
     const job = await this.prisma.ocrJob.create({
       data: {
         userId,
@@ -34,24 +36,30 @@ export class OcrsService {
       },
     });
 
+    this.logger.log(`[SCAN] Job created with ID: ${job.id}`);
+
     // Emit job to processing queue
     await this.emitJobToQueue(job.id);
 
+    this.logger.log(`[SCAN] Returning job response`);
     return this.transformJob(job);
   }
 
   async emitJobToQueue(jobId: string): Promise<void> {
-    this.logger.log(`Emitting job ${jobId} to processing queue`);
+    this.logger.log(`[EMIT] Emitting job ${jobId} to processing queue`);
 
     // Process job asynchronously (don't await to return response quickly)
     setImmediate(() => {
+      this.logger.log(`[EMIT] setImmediate callback executing for job ${jobId}`);
       this.ocrWorker.processOcrJob(jobId).catch((error) => {
         this.logger.error(
-          `Failed to process job ${jobId}: ${error.message}`,
+          `[EMIT] Failed to process job ${jobId}: ${error.message}`,
           error.stack,
         );
       });
     });
+
+    this.logger.log(`[EMIT] setImmediate scheduled for job ${jobId}`);
   }
 
   async updateJobStatus(

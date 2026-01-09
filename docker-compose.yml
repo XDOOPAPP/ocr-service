@@ -18,9 +18,9 @@ services:
     restart: on-failure
     networks:
       - fepa-network
-    volumes:
-      - .:/app
-      - /app/node_modules
+    # volumes:
+    #   - .:/app
+    #   - /app/node_modules
 
 networks:
   fepa-network:

@@ -2,28 +2,67 @@
 
 Docker Compose setup để chạy OCR Service độc lập với PostgreSQL và RabbitMQ.
 
+## ✨ Features
+
+- **QR Code Scanning**: Hỗ trợ quét mã QR trên hóa đơn điện tử Việt Nam (theo chuẩn Tổng cục Thuế)
+- **OCR Text Recognition**: Nhận diện văn bản từ ảnh hóa đơn (Tiếng Anh + Tiếng Việt)
+- **QR-First Approach**: Ưu tiên quét QR (độ chính xác ~98%), fallback sang OCR nếu không tìm thấy
+- **Automatic Expense Creation**: Tự động tạo khoản chi sau khi quét thành công
+- **RabbitMQ Integration**: Xử lý bất đồng bộ với message queue
+
+### QR Code Support
+
+**Định dạng hỗ trợ:** Hóa đơn điện tử Việt Nam (pipe-separated format)
+
+**Dữ liệu trích xuất từ QR:**
+- Số hóa đơn (Invoice Number)
+- Tên người bán (Seller Name)
+- Mã số thuế (Tax Code)
+- Tổng tiền thanh toán (Total Payment)
+- Ngày hóa đơn (Invoice Date)
+- Mã tra cứu (Lookup Code)
+
+**Ví dụ định dạng QR:**
+```
+01GTKT0/001|AA/19E|0000123|09/01/2026|0123456789|CÔNG TY ABC|9876543210|KHÁCH HÀNG XYZ|1000000|100000|1100000|ABC123XYZ
+```
+
+---
+
 ## 🚀 Quick Start
 
-### 1. Tạo .env file
+### Option A: Docker (Recommended - Tự động cài đặt)
+
 ```bash
+# 1. Tạo .env file
 cp .env.example .env
-```
 
-### 2. Start services
-```bash
-docker-compose up -d
-```
+# 2. Start services (Docker sẽ tự động npm install)
+docker-compose up -d --build
 
-### 3. Run Prisma migration
-```bash
-# Wait for PostgreSQL to be ready
+# 3. Run Prisma migration
 docker-compose exec ocr-service npx prisma generate
 docker-compose exec ocr-service npx prisma db push
+
+# 4. Verify
+# - OCR Service: http://localhost:3007
+# - RabbitMQ UI: http://localhost:15672 (fepa/fepa123)
 ```
 
-### 4. Verify
-- **OCR Service**: http://localhost:3007
-- **RabbitMQ UI**: http://localhost:15672 (fepa/fepa123)
+### Option B: Local Development (Cần npm install)
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Tạo .env file
+cp .env.example .env
+
+# 3. Start service locally
+npm run start:dev
+```
+
+> **💡 Lưu ý:** Chỉ cần `npm install` khi chạy local. Docker tự động cài đặt dependencies!
 
 ---
 
@@ -31,7 +70,7 @@ docker-compose exec ocr-service npx prisma db push
 
 | Service | Port | Description |
 |---------|------|-------------|
-| ocr-service | 3007 | OCR microservice |
+| ocr-service | 3007 | OCR microservice with QR scanning |
 | postgres | 5432 | PostgreSQL database |
 | rabbitmq | 5672, 15672 | RabbitMQ message broker |
 
