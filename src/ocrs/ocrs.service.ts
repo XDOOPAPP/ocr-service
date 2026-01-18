@@ -154,4 +154,43 @@ export class OcrsService {
       completedAt: job.completedAt?.toISOString() || null,
     };
   }
+
+  // ========== ADMIN METHODS ==========
+
+  async getAdminStats(): Promise<Record<string, unknown>> {
+    const [totalJobs, byStatus, recentJobs] = await Promise.all([
+      this.prisma.ocrJob.count(),
+      this.prisma.ocrJob.groupBy({
+        by: ['status'],
+        _count: true,
+      }),
+      this.prisma.ocrJob.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+    ]);
+
+    // Get unique users
+    const uniqueUsers = await this.prisma.ocrJob.groupBy({
+      by: ['userId'],
+    });
+
+    // Calculate success rate
+    const completedCount = byStatus.find((s) => s.status === 'completed')?._count || 0;
+    const failedCount = byStatus.find((s) => s.status === 'failed')?._count || 0;
+    const successRate = totalJobs > 0
+      ? ((completedCount / (completedCount + failedCount)) * 100).toFixed(2)
+      : 0;
+
+    return {
+      totalJobs,
+      totalUsers: uniqueUsers.length,
+      successRate: parseFloat(successRate as string),
+      byStatus: byStatus.map((item) => ({
+        status: item.status,
+        count: item._count,
+      })),
+      recentJobs: recentJobs.map((job) => this.transformJob(job)),
+    };
+  }
 }

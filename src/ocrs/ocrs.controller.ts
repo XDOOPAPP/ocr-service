@@ -25,4 +25,10 @@ export class OcrsController {
     const { jobId, userId } = payload;
     return this.ocrsService.findOne(jobId, userId);
   }
+
+  // Admin endpoints
+  @MessagePattern('ocr.admin_stats')
+  async getAdminStats() {
+    return this.ocrsService.getAdminStats();
+  }
 }
