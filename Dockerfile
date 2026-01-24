@@ -7,7 +7,7 @@ RUN apk add --no-cache openssl
 COPY package*.json ./
 COPY prisma ./prisma
 
-RUN npm install
+RUN npm ci
 
 RUN npx prisma generate
 
@@ -29,5 +29,8 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3007
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:3007/health || exit 1
 
 CMD ["node", "dist/main.js"]
